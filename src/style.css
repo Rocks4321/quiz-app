@@ -1,0 +1,196 @@
+/* Reset basis */
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 0;
+}
+
+/* Container */
+.container {
+  max-width: 700px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+/* Titel */
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+/* Vraag blok */
+.question {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Vraag tekst */
+.question p {
+  margin-bottom: 15px;
+}
+
+/* Antwoord opties */
+.answer-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+/* Hover effect */
+.answer-option:hover {
+  background: #f0f0f0;
+}
+
+/* Radio knop fix */
+.answer-option input[type="radio"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Geselecteerde optie (werkt automatisch via :has) */
+.answer-option:has(input:checked) {
+  background: #dbeafe;
+  border: 1px solid #60a5fa;
+}
+
+/* Knop */
+button {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  background: #3b82f6;
+  color: white;
+  font-size: 16px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+/* Knop hover */
+button:hover {
+  background: #2563eb;
+}
+
+/* Status tekst */
+#quizStatus {
+  text-align: center;
+  margin-bottom: 20px;
+  font-weight: bold;
+}/* Achtergrond hele pagina */
+body {
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #3b82f6, #9333ea);
+  margin: 0;
+  padding: 0;
+}
+
+/* Container centreren */
+.container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Startkaart */
+.start-card {
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Titel */
+.start-card h1 {
+  margin-bottom: 20px;
+}
+
+/* Input veld */
+.start-card input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+/* Knop */
+.start-card button {
+  width: 100%;
+  padding: 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+/* Hover knop */
+.start-card button:hover {
+  background: #2563eb;
+}
+
+/* Dashboard layout */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Reset knop volle breedte */
+.reset-button {
+  width: 100%;
+  padding: 14px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.reset-button:hover {
+  background: #dc2626;
+}
+.dashboard-page {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+.dashboard-page h1 {
+  margin-bottom: 20px;
+}
+
+.dashboard-page #resetButton {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 20px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.dashboard-page #resetButton:hover {
+  background: #dc2626;
+}
