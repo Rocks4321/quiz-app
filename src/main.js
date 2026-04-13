@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 
 const app = document.querySelector('#app')
 let teamNumberGlobal = ''
-const SUPABASE_URL = 'https://nggwxhvaayuqnkxishln.supabase.co'
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nZ3d4aHZhYXl1cW5reGlzaGxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODg5NTAsImV4cCI6MjA5MDE2NDk1MH0.PDtH7yyJL7izvtCwev8tkoy9gwHEgIDMica2-v-RoBY'
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
