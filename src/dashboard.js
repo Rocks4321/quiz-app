@@ -19,8 +19,6 @@ document.querySelector('#app').innerHTML = `
 `
 
 const dashboardTableDiv = document.querySelector('#dashboardTable')
-console.log('dashboardTableDiv gevonden:', dashboardTableDiv)
-console.log('dashboardTableDiv:', dashboardTableDiv)
 const statsDiv = document.querySelector('#stats')
 const resetButton = document.querySelector('#resetButton')
 
@@ -74,10 +72,6 @@ function renderTable(data) {
     return
   }
 
-  console.log('=== DEBUG TABLE DATA ===')
-  console.log('First row:', data[0])
-  console.log('All rows:', JSON.stringify(data, null, 2))
-
   let html = `
     <table border="1" style="width:100%; border-collapse: collapse;">
       <tr>
@@ -91,7 +85,6 @@ function renderTable(data) {
   `
 
   data.forEach((row, index) => {
-    console.log(`Row ${index}:`, row)
     let medal = ''
     if (index === 0) medal = '🥇'
     if (index === 1) medal = '🥈'
@@ -120,16 +113,11 @@ function applyFilterAndRender() {
 
 async function loadDashboard() {
   try {
-    console.log('loadDashboard gestart')
     const { data, error } = await supabase
       .from('Submissions')
       .select('*')
 
-    console.log('dashboard error:', error)
-    console.log('dashboard data:', data)
-
     if (error) {
-      console.error('Fout bij ophalen dashboard:', error)
       dashboardTableDiv.innerHTML = '<p>Fout bij laden van dashboard.</p>'
       statsDiv.innerHTML = ''
       return
@@ -140,14 +128,14 @@ async function loadDashboard() {
     // Sort by score descending
     rows.sort((a, b) => (b.score || 0) - (a.score || 0))
 
-    console.log(rows)
     allSubmissions = rows
     applyFilterAndRender()
   } catch (err) {
     console.error('Error in loadDashboard:', err)
+    dashboardTableDiv.innerHTML = '<p>Fout bij laden van dashboard.</p>'
+    statsDiv.innerHTML = ''
   }
 }
-
 
 resetButton.addEventListener('click', async () => {
   const confirmed = window.confirm(
@@ -162,7 +150,6 @@ resetButton.addEventListener('click', async () => {
     .neq('id', 0)
 
   if (error) {
-    console.error('Reset fout:', error)
     alert('Reset mislukt. Controleer je database policies / rechten.')
     return
   }
@@ -173,22 +160,18 @@ resetButton.addEventListener('click', async () => {
 
 loadDashboard()
 
-supabase
-  .channel('dashboard-realtime')
-  .on(
-    'postgres_changes',
-    {
-      event: '*',
-      schema: 'public',
-      table: 'Submissions'
-    },
-    payload => {
-      try {
-        console.log('Realtime update:', payload)
-        loadDashboard()
-      } catch (err) {
-        console.error('Error in realtime callback:', err)
-      }
-    }
-  )
-  .subscribe()
+// Realtime updates (disabled for now - causing issues)
+// supabase
+//   .channel('dashboard-realtime')
+//   .on(
+//     'postgres_changes',
+//     {
+//       event: '*',
+//       schema: 'public',
+//       table: 'Submissions'
+//     },
+//     payload => {
+//       loadDashboard()
+//     }
+//   )
+//   .subscribe()
