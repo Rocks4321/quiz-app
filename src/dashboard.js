@@ -1,8 +1,8 @@
 import './style.css'
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = 'https://nggwxhvaayuqnkxishln.supabase.co'
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nZ3d4aHZhYXl1cW5reGlzaGxuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODg5NTAsImV4cCI6MjA5MDE2NDk1MH0.PDtH7yyJL7izvtCwev8tkoy9gwHEgIDMica2-v-RoBY'
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_KEY = import.meta.env.VITE_SUPABSE_ANON_KEY
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
@@ -30,6 +30,17 @@ function formatDateTime(dateString) {
   if (!dateString) return '-'
   const date = new Date(dateString)
   return date.toLocaleString('nl-NL')
+}
+
+function calculateTime(startedAt, submittedAt) {
+  if (!startedAt || !submittedAt) return '-'
+  const start = new Date(startedAt)
+  const end = new Date(submittedAt)
+  const diffMs = end - start
+  const diffSec = Math.floor(diffMs / 1000)
+  const minutes = Math.floor(diffSec / 60)
+  const seconds = diffSec % 60
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
 function renderStats(data) {
@@ -63,6 +74,10 @@ function renderTable(data) {
     return
   }
 
+  console.log('=== DEBUG TABLE DATA ===')
+  console.log('First row:', data[0])
+  console.log('All rows:', JSON.stringify(data, null, 2))
+
   let html = `
     <table border="1" style="width:100%; border-collapse: collapse;">
       <tr>
@@ -76,6 +91,7 @@ function renderTable(data) {
   `
 
   data.forEach((row, index) => {
+    console.log(`Row ${index}:`, row)
     let medal = ''
     if (index === 0) medal = '🥇'
     if (index === 1) medal = '🥈'
@@ -88,7 +104,7 @@ function renderTable(data) {
         <td>${row.score ?? '-'}</td>
         <td>${row.correct_answers ?? '-'}</td>
         <td>${row.total_questions ?? '-'}</td>
-        <td>${formatDateTime(row.submitted_at)}</td>
+        <td>${calculateTime(row.started_at, row.submitted_at)}</td>
       </tr>
     `
   })
@@ -100,59 +116,36 @@ function renderTable(data) {
 function applyFilterAndRender() {
   renderStats(allSubmissions)
   renderTable(allSubmissions)
-  
-
-  renderStats(filtered)
-  renderTable(filtered)
 }
 
 async function loadDashboard() {
-  console.log('loadDashboard gestart')
-  const { data, error } = await supabase
-    .from('Submissions')
-    .select('*')
+  try {
+    console.log('loadDashboard gestart')
+    const { data, error } = await supabase
+      .from('Submissions')
+      .select('*')
 
-  console.log('dashboard error:', error)
-  console.log('dashboard data:', data)
+    console.log('dashboard error:', error)
+    console.log('dashboard data:', data)
 
-  if (error) {
-    console.error('Fout bij ophalen dashboard:', error)
-    dashboardTableDiv.innerHTML = '<p>Fout bij laden van dashboard.</p>'
-    statsDiv.innerHTML = ''
-    return
+    if (error) {
+      console.error('Fout bij ophalen dashboard:', error)
+      dashboardTableDiv.innerHTML = '<p>Fout bij laden van dashboard.</p>'
+      statsDiv.innerHTML = ''
+      return
+    }
+
+    const rows = data || []
+
+    // Sort by score descending
+    rows.sort((a, b) => (b.score || 0) - (a.score || 0))
+
+    console.log(rows)
+    allSubmissions = rows
+    applyFilterAndRender()
+  } catch (err) {
+    console.error('Error in loadDashboard:', err)
   }
-
-  const rows = data || []
-  const teamMap = {}
-
-  rows.forEach(row => {
-    const team = row.team_number
-
-    if (!teamMap[team]) {
-      teamMap[team] = {
-        team_number: team,
-        quizzes_completed: 0,
-        total_correct: 0,
-        total_score: 0
-      }
-    }
-
-    teamMap[team].quizzes_completed += 1
-    teamMap[team].total_correct += Number(row.correct_answers) || 0
-    teamMap[team].total_score += Number(row.score) || 0
-  })
-
-  const result = Object.values(teamMap)
-
-  result.sort((a, b) => {
-    if (b.quizzes_completed !== a.quizzes_completed) {
-      return b.quizzes_completed - a.quizzes_completed
-    }
-    return b.total_correct - a.total_correct
-  })
-
-  allSubmissions = result
-  applyFilterAndRender()
 }
 
 
@@ -190,8 +183,12 @@ supabase
       table: 'Submissions'
     },
     payload => {
-      console.log('Realtime update:', payload)
-      loadDashboard()
+      try {
+        console.log('Realtime update:', payload)
+        loadDashboard()
+      } catch (err) {
+        console.error('Error in realtime callback:', err)
+      }
     }
   )
   .subscribe()
