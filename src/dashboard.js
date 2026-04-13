@@ -1,229 +1,189 @@
 import './style.css'
 import { createClient } from '@supabase/supabase-js'
 
-const app = document.querySelector('#app')
-let teamNumberGlobal = ''
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-const Params = new URLSearchParams(window.location.search)
-const POST_ID = Number(Params.get('quiz')) || 1
-let startedAt = null
-let loadedQuestions = []
+document.querySelector('#app').innerHTML = `
+  <div class="dashboard-page">
+    <h1>Instructeur Dashboard</h1>
 
-app.innerHTML = `
-  <div class="container">
-    <div class="start-card">
-      <h1>Quiz</h1>
-      <input type="text" id="teamInput" placeholder="Voer teamnummer in" />
-      <button id="startButton">Start quiz</button>
-      <div id="message"></div>
-    </div>
+    <button id="resetButton">Reset alle inzendingen</button>
 
-    <div id="quiz"></div>
+    <div id="stats">Laden van statistieken...</div>
+
+    <div id="dashboardTable">Laden...</div>
   </div>
 `
 
-startButton.addEventListener('click', async () => {
-  const teamNumber = document.querySelector('#teamInput').value
-  teamNumberGlobal = teamNumber
+const dashboardTableDiv = document.querySelector('#dashboardTable')
+console.log('dashboardTableDiv gevonden:', dashboardTableDiv)
+console.log('dashboardTableDiv:', dashboardTableDiv)
+const statsDiv = document.querySelector('#stats')
+const resetButton = document.querySelector('#resetButton')
 
-  app.innerHTML = `
-    <div class="container">
-      <div id="message"></div>
-      <div id="quiz"></div>
+let allSubmissions = []
+
+function formatDateTime(dateString) {
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  return date.toLocaleString('nl-NL')
+}
+
+function calculateTime(startedAt, submittedAt) {
+  if (!startedAt || !submittedAt) return '-'
+  const start = new Date(startedAt)
+  const end = new Date(submittedAt)
+  const diffMs = end - start
+  const diffSec = Math.floor(diffMs / 1000)
+  const minutes = Math.floor(diffSec / 60)
+  const seconds = diffSec % 60
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+function renderStats(data) {
+  const totalSubmissions = data.length
+
+  const averageScore =
+    totalSubmissions > 0
+      ? (
+          data.reduce((sum, row) => sum + (Number(row.score) || 0), 0) /
+          totalSubmissions
+        ).toFixed(2)
+      : 0
+
+  const bestScore =
+    totalSubmissions > 0
+      ? Math.max(...data.map(row => Number(row.score) || 0))
+      : 0
+
+  statsDiv.innerHTML = `
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <div><strong>Totaal aantal inzendingen:</strong> ${totalSubmissions}</div>
+      <div><strong>Gemiddelde score:</strong> ${averageScore}</div>
+      <div><strong>Hoogste score:</strong> ${bestScore}</div>
     </div>
   `
+}
 
-  const quizDiv = document.querySelector('#quiz')
-  const messageDiv = document.querySelector('#message')
-
-  messageDiv.textContent = ''
-
-  if (!teamNumber) {
-    messageDiv.textContent = 'Voer eerst een teamnummer in.'
-    return
-  }
-
-  const { data: existingRows, error: existingError } = await supabase
-    .from('Submissions')
-    .select('id')
-    .eq('team_number', Number(teamNumber))
-    .eq('post_id', POST_ID)
-    .limit(1)
-
-  if (existingError) {
-    console.error(existingError)
-    messageDiv.textContent = 'Fout bij controleren van eerdere inzending.'
-    return
-  }
-
-  if (existingRows && existingRows.length > 0) {
-    messageDiv.textContent = 'Deze quiz is al door jullie team ingediend.'
-    return
-  }
-
-  startedAt = new Date().toISOString()
-
-  const { data, error } = await supabase
-    .from('Questions')
-    .select('*')
-    .eq('post_id', POST_ID)
-    .order('question_number', { ascending: true })
-
-  if (error) {
-    console.error(error)
-    messageDiv.textContent = 'Fout bij ophalen vragen.'
-    return
-  }
-
+function renderTable(data) {
   if (!data || data.length === 0) {
-    messageDiv.textContent = 'Geen vragen gevonden.'
+    dashboardTableDiv.innerHTML = '<p>Geen inzendingen gevonden.</p>'
     return
   }
 
-  loadedQuestions = data
+  let html = `
+    <table border="1" style="width:100%; border-collapse: collapse;">
+      <tr>
+        <th>Plaats</th>
+        <th>Team</th>
+        <th>Score</th>
+        <th>Goed</th>
+        <th>Totaal</th>
+        <th>Tijd</th>
+      </tr>
+  `
 
-  let html = '<h2>Vragen</h2>'
+  data.forEach((row, index) => {
+    let medal = ''
+    if (index === 0) medal = '🥇'
+    if (index === 1) medal = '🥈'
+    if (index === 2) medal = '🥉'
 
-  data.forEach((q) => {
     html += `
-<div class="question">
-  <p><strong>${q.question_number}. ${q.question_text}</strong></p>
-
-<label class="answer-option">
-  <input type="radio" name="q${q.id}" value="A" />
-  ${q.option_a}
-</label>
-
-<label class="answer-option">
-  <input type="radio" name="q${q.id}" value="B" />
-  ${q.option_b}
-</label>
-
-<label class="answer-option">
-  <input type="radio" name="q${q.id}" value="C" />
-  ${q.option_c}
-</label>
-
-<label class="answer-option">
-  <input type="radio" name="q${q.id}" value="D" />
-  ${q.option_d}
-</label>
-</div>
+      <tr>
+        <td>${medal} ${index + 1}</td>
+        <td>${row.team_number}</td>
+        <td>${row.score ?? '-'}</td>
+        <td>${row.correct_answers ?? '-'}</td>
+        <td>${row.total_questions ?? '-'}</td>
+        <td>${calculateTime(row.started_at, row.submitted_at)}</td>
+      </tr>
     `
   })
 
-  html += `<button id="submitButton" type="button">Verzenden</button>`
+  html += '</table>'
+  dashboardTableDiv.innerHTML = html
+}
 
-  quizDiv.innerHTML = html
+function applyFilterAndRender() {
+  renderStats(allSubmissions)
+  renderTable(allSubmissions)
+}
 
-  document.querySelector('#submitButton').addEventListener('click', submitQuiz)
+async function loadDashboard() {
+  try {
+    console.log('loadDashboard gestart')
+    const { data, error } = await supabase
+      .from('Submissions')
+      .select('*')
+
+    console.log('dashboard error:', error)
+    console.log('dashboard data:', data)
+
+    if (error) {
+      console.error('Fout bij ophalen dashboard:', error)
+      dashboardTableDiv.innerHTML = '<p>Fout bij laden van dashboard.</p>'
+      statsDiv.innerHTML = ''
+      return
+    }
+
+    const rows = data || []
+
+    // Sort by score descending
+    rows.sort((a, b) => (b.score || 0) - (a.score || 0))
+
+    console.log(rows)
+    allSubmissions = rows
+    applyFilterAndRender()
+  } catch (err) {
+    console.error('Error in loadDashboard:', err)
+  }
+}
+
+
+resetButton.addEventListener('click', async () => {
+  const confirmed = window.confirm(
+    'Weet je zeker dat je alle inzendingen wilt verwijderen?'
+  )
+
+  if (!confirmed) return
+
+  const { error } = await supabase
+    .from('Submissions')
+    .delete()
+    .neq('id', 0)
+
+  if (error) {
+    console.error('Reset fout:', error)
+    alert('Reset mislukt. Controleer je database policies / rechten.')
+    return
+  }
+
+  alert('Alle inzendingen zijn verwijderd.')
+  loadDashboard()
 })
 
-async function submitQuiz(event) {
-  event.preventDefault()
-  console.log('submitQuiz gestart')
-  document.querySelector('#message').textContent = ''
+loadDashboard()
 
-  const teamInput = teamNumberGlobal
-
-  if (!teamInput) {
-    document.querySelector('#message').textContent = 'Geen teamnummer ingevuld.'
-    return
-  }
-
-  const { data: existingRows, error: existingError } = await supabase
-    .from('Submissions')
-    .select('id')
-    .eq('team_number', Number(teamInput))
-    .eq('post_id', POST_ID)
-    .limit(1)
-
-  if (existingError) {
-    console.error(existingError)
-    document.querySelector('#message').textContent = 'Fout bij controleren van eerdere inzending.'
-    return
-  }
-
-  if (existingRows && existingRows.length > 0) {
-    document.querySelector('#message').textContent = 'Deze quiz is al door jullie team ingediend.'
-    return
-  }
-
-  const answers = []
-  let score = 0
-  let correctAnswers = 0
-
-  for (const q of loadedQuestions) {
-    const selected = document.querySelector(`input[name="q${q.id}"]:checked`)
-
-    if (!selected) {
-      document.querySelector('#message').textContent = 'Beantwoord alle vragen.'
-      return
-    }
-
-    const givenAnswer = selected.value
-
-    if (givenAnswer === q.correct_answer) {
-      score += 1
-      correctAnswers += 1
-    }
-
-    answers.push({
-      question_id: q.id,
-      given_answer: givenAnswer
-    })
-  }
-
-  const { data: submissionData, error: submissionError } = await supabase
-    .from('Submissions')
-    .insert([
-      {
-        team_number: Number(teamInput),
-        post_id: POST_ID,
-        started_at: startedAt,
-        submitted_at: new Date().toISOString(),
-        status: 'submitted',
-        score: score,
-        correct_answers: correctAnswers,
-        total_questions: loadedQuestions.length
+supabase
+  .channel('dashboard-realtime')
+  .on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'Submissions'
+    },
+    payload => {
+      try {
+        console.log('Realtime update:', payload)
+        loadDashboard()
+      } catch (err) {
+        console.error('Error in realtime callback:', err)
       }
-    ])
-    .select()
-
-  if (submissionError) {
-    console.error(submissionError)
-
-    if (submissionError.code === '23505') {
-      document.querySelector('#message').textContent = 'Deze quiz is al door jullie team ingediend.'
-      return
     }
-
-    messageDiv.textContent = 'Fout bij opslaan van submission.'
-    return
-  }
-
-  const submissionId = submissionData[0].id
-
-  const rows = answers.map((a) => ({
-    submission_id: submissionId,
-    question_id: a.question_id,
-    given_answer: a.given_answer
-  }))
-
-  const { error: answersError } = await supabase
-    .from('submission_answers')
-    .insert(rows)
-
-  if (answersError) {
-    console.error(answersError)
-    document.querySelector('#message').textContent = 'Fout bij opslaan van antwoorden.'
-    return
-  }
-
-  document.querySelector('#quiz').innerHTML = ''
-  document.querySelector('#message').textContent = 'Jullie antwoorden zijn ontvangen.'
-}
+  )
+  .subscribe()
