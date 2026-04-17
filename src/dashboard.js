@@ -44,26 +44,35 @@ function calculateTime(startedAt, submittedAt) {
 }
 
 function renderStats(data) {
-  const totalSubmissions = data.length
+  const totalTeams = data.length
 
   const averageScore =
-    totalSubmissions > 0
-      ? (
-          data.reduce((sum, row) => sum + (Number(row.score) || 0), 0) /
-          totalSubmissions
-        ).toFixed(2)
-      : 0
+  totalTeams > 0
+    ? (
+        data.reduce(
+          (sum, row) =>
+            sum +
+            (Number(row.correct_quiz1) || 0) +
+            (Number(row.correct_quiz2) || 0),
+          0
+        ) / totalTeams
+      ).toFixed(2)
+    : 0
 
-  const bestScore =
-    totalSubmissions > 0
-      ? Math.max(...data.map(row => Number(row.score) || 0))
-      : 0
+const bestScore =
+  totalTeams > 0
+    ? Math.max(
+        ...data.map(
+          row => (Number(row.correct_quiz1) || 0) + (Number(row.correct_quiz2) || 0)
+        )
+      )
+    : 0
 
   statsDiv.innerHTML = `
     <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-      <div><strong>Totaal aantal inzendingen:</strong> ${totalSubmissions}</div>
-      <div><strong>Gemiddelde score:</strong> ${averageScore}</div>
-      <div><strong>Hoogste score:</strong> ${bestScore}</div>
+      <div><strong>Totaal aantal teams:</strong> ${totalTeams}</div>
+      <div><strong>Gemiddelde totaal score:</strong> ${averageScore}</div>
+      <div><strong>Hoogste totaal score:</strong> ${bestScore}</div>
     </div>
   `
 }
@@ -79,10 +88,10 @@ function renderTable(data) {
       <tr>
         <th>Plaats</th>
         <th>Team</th>
-        <th>Score</th>
-        <th>Goed</th>
-        <th>Totaal</th>
-        <th>Tijd</th>
+        <th>Aantal quizen gemaakt</th>
+        <th>Goeie antwoorden quiz 1</th>
+        <th>Goeie antwoorden quiz 2</th>
+        <th>Score totaal</th>
       </tr>
   `
 
@@ -95,11 +104,11 @@ function renderTable(data) {
     html += `
       <tr>
         <td>${medal} ${index + 1}</td>
-        <td>${row.team_number}</td>
-        <td>${row.score ?? '-'}</td>
-        <td>${row.correct_answers ?? '-'}</td>
-        <td>${row.total_questions ?? '-'}</td>
-        <td>${calculateTime(row.started_at, row.submitted_at)}</td>
+        <td>${row.team_name || row.team_number || '-'}</td>
+        <td>${row.quizzes_completed}</td>
+        <td>${row.correct_quiz1}</td>
+        <td>${row.correct_quiz2}</td>
+        <td>${row.total_score}</td>
       </tr>
     `
   })
@@ -131,12 +140,47 @@ async function loadDashboard() {
     }
 
     const rows = data || []
+    const teamMap = {}
 
-    // Sort by score descending
-    rows.sort((a, b) => (b.score || 0) - (a.score || 0))
+    rows.forEach(row => {
+      const teamId = row.team_name || row.team_number || 'Onbekend'
 
-    console.log(rows)
-    allSubmissions = rows
+      if (!teamMap[teamId]) {
+        teamMap[teamId] = {
+          team_name: row.team_name || null,
+          team_number: row.team_number || null,
+          quizzes_completed: 0,
+          correct_quiz1: 0,
+          correct_quiz2: 0,
+          total_score: 0
+        }
+      }
+
+      teamMap[teamId].quizzes_completed += 1
+      teamMap[teamId].total_score += Number(row.score) || 0
+
+      if (row.post_id === 1) {
+        teamMap[teamId].correct_quiz1 += Number(row.correct_answers) || 0
+      } else if (row.post_id === 2) {
+        teamMap[teamId].correct_quiz2 += Number(row.correct_answers) || 0
+      }
+    })
+
+    const result = Object.values(teamMap)
+
+   result.sort((a, b) => {
+  if (b.quizzes_completed !== a.quizzes_completed) {
+    return b.quizzes_completed - a.quizzes_completed
+  }
+
+  const totalCorrectA = (a.correct_quiz1 || 0) + (a.correct_quiz2 || 0)
+  const totalCorrectB = (b.correct_quiz1 || 0) + (b.correct_quiz2 || 0)
+
+  return totalCorrectB - totalCorrectA
+})
+
+    console.log(result)
+    allSubmissions = result
     applyFilterAndRender()
   } catch (err) {
     console.error('Error in loadDashboard:', err)
