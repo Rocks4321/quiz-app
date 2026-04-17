@@ -2,33 +2,65 @@ import './style.css'
 import { createClient } from '@supabase/supabase-js'
 
 const app = document.querySelector('#app')
-let teamNumberGlobal = ''
+let teamNameGlobal = ''
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 const Params = new URLSearchParams(window.location.search)
-const POST_ID = Number(Params.get('quiz')) || 1
+let POST_ID = Number(Params.get('quiz')) || 1
 let startedAt = null
 let loadedQuestions = []
 
-app.innerHTML = `
-  <div class="container">
-    <div class="start-card">
-      <h1>Quiz</h1>
-      <input type="text" id="teamInput" placeholder="Voer teamnummer in" />
-      <button id="startButton">Start quiz</button>
-      <div id="message"></div>
+function normalizeTeamName(name) {
+  return name.trim().replace(/\s+/g, ' ')
+}
+
+// Als er geen quiz parameter is, toon een foutmelding
+if (!Params.get('quiz')) {
+  app.innerHTML = `
+    <div class="container">
+      <div class="error-card">
+        <h1>Quiz App</h1>
+        <p>Scan een QR-code om een quiz te starten.</p>
+      </div>
     </div>
+  `
+} else {
+  // Toon start scherm
+  showStartScreen()
+}
 
-    <div id="quiz"></div>
-  </div>
-`
+function showStartScreen() {
+  app.innerHTML = `
+    <div class="container">
+      <div class="start-card">
+        <h1>Quiz ${Params.get('quiz')}</h1>
+        <div class="input-group">
+          <label for="teamInput">Voer je teamnaam in:</label>
+          <input type="text" id="teamInput" placeholder="Teamnaam" />
+        </div>
+        <button id="startButton">Start Quiz</button>
+        <div id="message"></div>
+      </div>
+    </div>
+  `
 
-startButton.addEventListener('click', async () => {
-  const teamNumber = document.querySelector('#teamInput').value
-  teamNumberGlobal = teamNumber
+  document.querySelector('#startButton').addEventListener('click', () => {
+    const teamName = normalizeTeamName(document.querySelector('#teamInput').value)
+    if (!teamName) {
+      document.querySelector('#message').textContent = 'Voer eerst een teamnaam in.'
+      return
+    }
+    teamNameGlobal = teamName
+    loadAndStartQuiz()
+  })
+}
+
+async function loadAndStartQuiz() {
+  console.log('POST_ID:', POST_ID)
+  console.log('URL params:', Params.get('quiz'))
 
   app.innerHTML = `
     <div class="container">
@@ -42,17 +74,23 @@ startButton.addEventListener('click', async () => {
 
   messageDiv.textContent = ''
 
-  if (!teamNumber) {
-    messageDiv.textContent = 'Voer eerst een teamnummer in.'
+  const teamName = normalizeTeamName(teamNameGlobal)
+
+  if (!teamName) {
+    messageDiv.textContent = 'Voer eerst een teamnaam in.'
     return
   }
 
+  console.log('Checking team submission in loadAndStartQuiz for team:', JSON.stringify(teamName), 'quiz:', POST_ID)
+
   const { data: existingRows, error: existingError } = await supabase
     .from('Submissions')
-    .select('id')
-    .eq('team_number', Number(teamNumber))
+    .select('id, team_name, post_id')
+    .eq('team_name', teamName)
     .eq('post_id', POST_ID)
     .limit(1)
+
+  console.log('Query result existingRows:', existingRows)
 
   if (existingError) {
     console.error(existingError)
@@ -61,7 +99,7 @@ startButton.addEventListener('click', async () => {
   }
 
   if (existingRows && existingRows.length > 0) {
-    messageDiv.textContent = 'Deze quiz is al door jullie team ingediend.'
+    messageDiv.textContent = 'Jullie team heeft deze quiz al ingediend.'
     return
   }
 
@@ -80,7 +118,7 @@ startButton.addEventListener('click', async () => {
   }
 
   if (!data || data.length === 0) {
-    messageDiv.textContent = 'Geen vragen gevonden.'
+    messageDiv.textContent = 'Geen vragen gevonden voor deze quiz.'
     return
   }
 
@@ -89,58 +127,65 @@ startButton.addEventListener('click', async () => {
   let html = '<h2>Vragen</h2>'
 
   data.forEach((q) => {
-    html += `
-<div class="question">
-  <p><strong>${q.question_number}. ${q.question_text}</strong></p>
+  html += `
+    <div class="question">
+      <p><strong>${q.question_number}. ${q.question_text}</strong></p>
 
-<label class="answer-option">
-  <input type="radio" name="q${q.id}" value="A" />
-  ${q.option_a}
-</label>
+      <label class="answer-option">
+        <input type="radio" name="q${q.id}" value="A" />
+        ${q.option_a}
+      </label>
 
-<label class="answer-option">
-  <input type="radio" name="q${q.id}" value="B" />
-  ${q.option_b}
-</label>
+      <label class="answer-option">
+        <input type="radio" name="q${q.id}" value="B" />
+        ${q.option_b}
+      </label>
 
-<label class="answer-option">
-  <input type="radio" name="q${q.id}" value="C" />
-  ${q.option_c}
-</label>
+      <label class="answer-option">
+        <input type="radio" name="q${q.id}" value="C" />
+        ${q.option_c}
+      </label>
 
-<label class="answer-option">
-  <input type="radio" name="q${q.id}" value="D" />
-  ${q.option_d}
-</label>
-</div>
-    `
-  })
+      ${q.option_d ? `
+        <label class="answer-option">
+          <input type="radio" name="q${q.id}" value="D" />
+          ${q.option_d}
+        </label>
+      ` : ''}
+    </div>
+  `
+})
 
   html += `<button id="submitButton" type="button">Verzenden</button>`
 
   quizDiv.innerHTML = html
 
   document.querySelector('#submitButton').addEventListener('click', submitQuiz)
-})
+}
 
 async function submitQuiz(event) {
   event.preventDefault()
-  console.log('submitQuiz gestart')
+  console.log('submitQuiz gestart, POST_ID:', POST_ID, 'team:', teamNameGlobal)
+
   document.querySelector('#message').textContent = ''
 
-  const teamInput = teamNumberGlobal
+  const teamName = normalizeTeamName(teamNameGlobal)
 
-  if (!teamInput) {
-    document.querySelector('#message').textContent = 'Geen teamnummer ingevuld.'
+  if (!teamName) {
+    document.querySelector('#message').textContent = 'Geen teamnaam ingevuld.'
     return
   }
 
+  console.log('Checking existing submissions for team:', JSON.stringify(teamName), 'quiz:', POST_ID)
+
   const { data: existingRows, error: existingError } = await supabase
     .from('Submissions')
-    .select('id')
-    .eq('team_number', Number(teamInput))
+    .select('id, team_name, post_id')
+    .eq('team_name', teamName)
     .eq('post_id', POST_ID)
     .limit(1)
+
+  console.log('Query result existingRows:', existingRows)
 
   if (existingError) {
     console.error(existingError)
@@ -182,7 +227,7 @@ async function submitQuiz(event) {
     .from('Submissions')
     .insert([
       {
-        team_number: Number(teamInput),
+        team_name: teamName,
         post_id: POST_ID,
         started_at: startedAt,
         submitted_at: new Date().toISOString(),
@@ -195,18 +240,17 @@ async function submitQuiz(event) {
     .select()
 
   if (submissionError) {
-    console.error(submissionError)
-
+    console.error('Insert error:', submissionError)
+    console.log('Insert error full:', JSON.stringify(submissionError, null, 2))
     if (submissionError.code === '23505') {
       document.querySelector('#message').textContent = 'Deze quiz is al door jullie team ingediend.'
       return
     }
-
-    messageDiv.textContent = 'Fout bij opslaan van submission.'
+    document.querySelector('#message').textContent = 'Fout bij opslaan van submission: ' + submissionError.message
     return
   }
 
-  const submissionId = submissionData[0].id
+  const submissionId = submissionData?.[0]?.id
 
   const rows = answers.map((a) => ({
     submission_id: submissionId,
