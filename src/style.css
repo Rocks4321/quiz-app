@@ -22,7 +22,7 @@ h1 {
 /* Vraag blok */
 .question {
   background: white;
-  padding: 10px;
+  padding: 20px;
   border-radius: 12px;
   margin-bottom: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -219,9 +219,320 @@ body {
 }
 
 .question-image img {
-  max-width: 10Spx;   /* maximale breedte */
+  max-width: 200Spx;   /* maximale breedte */
   width: 100%;        /* schaalt netjes */
   height: auto;       /* behoud verhoudingen */
   margin: 10px 0;
   border-radius: 8px;
+}
+:root {
+  --rnr-charcoal: #2f3128;
+  --rnr-charcoal-dark: #23251e;
+  --rnr-yellow: #f2c318;
+  --rnr-yellow-dark: #d8ab10;
+  --rnr-forest: #4f6b2a;
+  --rnr-forest-dark: #3f5621;
+  --rnr-sand: #f5f1e6;
+  --rnr-card: #ffffff;
+  --rnr-text: #1f241b;
+  --rnr-text-light: #5c6552;
+  --rnr-border: #d9d4c7;
+  --rnr-success: #5d7f31;
+  --rnr-danger: #b63b2f;
+  --rnr-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  color: var(--rnr-text);
+  background:
+    linear-gradient(rgba(47, 49, 40, 0.72), rgba(47, 49, 40, 0.72)),
+    url("https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=80")
+      center/cover no-repeat fixed;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+/* Quiz startpagina */
+.container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+.start-card,
+.error-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--rnr-card);
+  border-radius: 18px;
+  padding: 32px 28px;
+  box-shadow: var(--rnr-shadow);
+  border-top: 8px solid var(--rnr-yellow);
+  text-align: center;
+}
+
+.start-card h1,
+.error-card h1 {
+  margin: 0 0 18px;
+  color: var(--rnr-charcoal);
+  font-size: 32px;
+}
+
+.start-card p,
+.error-card p {
+  color: var(--rnr-text-light);
+  line-height: 1.5;
+}
+
+.input-group {
+  text-align: left;
+  margin: 18px 0 20px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 700;
+  color: var(--rnr-charcoal);
+}
+
+.start-card input,
+.input-group input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--rnr-border);
+  border-radius: 12px;
+  font-size: 16px;
+  background: #fff;
+  color: var(--rnr-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.start-card input:focus,
+.input-group input:focus {
+  outline: none;
+  border-color: var(--rnr-yellow);
+  box-shadow: 0 0 0 4px rgba(242, 195, 24, 0.18);
+}
+
+button {
+  display: inline-block;
+  width: 100%;
+  padding: 14px 18px;
+  border: none;
+  border-radius: 12px;
+  background: var(--rnr-yellow);
+  color: var(--rnr-charcoal-dark);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+
+button:hover {
+  background: var(--rnr-yellow-dark);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+#message {
+  margin-top: 16px;
+  font-weight: 700;
+  color: var(--rnr-forest-dark);
+}
+
+/* Quiz vragenpagina */
+.quiz-page,
+.quiz-wrapper {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+
+#quiz {
+  width: 100%;
+  max-width: 900px;
+}
+
+#quiz h2 {
+  margin: 0 0 20px;
+  color: #fff;
+  font-size: 34px;
+  text-align: center;
+}
+
+.question {
+  background: var(--rnr-card);
+  border-radius: 16px;
+  padding: 22px 20px;
+  margin-bottom: 18px;
+  box-shadow: var(--rnr-shadow);
+  border-left: 8px solid var(--rnr-forest);
+}
+
+.question p {
+  margin: 0 0 16px;
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--rnr-charcoal);
+}
+
+.answer-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--rnr-border);
+  border-radius: 12px;
+  cursor: pointer;
+  background: #fcfbf8;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.08s ease;
+}
+
+.answer-option:hover {
+  background: #f7f2df;
+  border-color: var(--rnr-yellow);
+}
+
+.answer-option input[type="radio"] {
+  margin: 0;
+  transform: scale(1.15);
+  accent-color: var(--rnr-forest);
+}
+
+.answer-option:has(input:checked) {
+  background: #eef5e5;
+  border-color: var(--rnr-forest);
+}
+
+.question-image {
+  text-align: center;
+  margin: 10px 0 16px;
+}
+
+.question-image img {
+  max-width: 260px;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 3px solid var(--rnr-border);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Dashboard */
+.dashboard-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 36px 20px 50px;
+}
+
+.dashboard-page h1 {
+  margin: 0 0 20px;
+  color: #fff;
+  font-size: 36px;
+  text-align: center;
+}
+
+.dashboard-page #stats {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 20px;
+  box-shadow: var(--rnr-shadow);
+}
+
+.dashboard-page #resetButton {
+  display: block;
+  width: 100%;
+  margin-bottom: 20px;
+  background: var(--rnr-danger);
+  color: #fff;
+}
+
+.dashboard-page #resetButton:hover {
+  background: #992d24;
+}
+
+#dashboardTable {
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: var(--rnr-shadow);
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+th,
+td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid #ece7da;
+}
+
+th {
+  background: var(--rnr-charcoal);
+  color: #fff;
+  font-size: 15px;
+}
+
+tr:nth-child(even) td {
+  background: #faf8f2;
+}
+
+tr:hover td {
+  background: #f4f0e3;
+}
+
+/* Kleine schermen */
+@media (max-width: 640px) {
+  .start-card,
+  .error-card {
+    padding: 24px 18px;
+  }
+
+  .start-card h1,
+  .error-card h1 {
+    font-size: 28px;
+  }
+
+  .question {
+    padding: 18px 16px;
+  }
+
+  .question p {
+    font-size: 17px;
+  }
+
+  .dashboard-page h1 {
+    font-size: 30px;
+  }
+
+  th,
+  td {
+    padding: 10px 8px;
+    font-size: 14px;
+  }
 }
