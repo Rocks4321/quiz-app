@@ -219,7 +219,7 @@ body {
 }
 
 .question-image img {
-  max-width: 200Spx;   /* maximale breedte */
+  max-width: 100Spx;   /* maximale breedte */
   width: 100%;        /* schaalt netjes */
   height: auto;       /* behoud verhoudingen */
   margin: 10px 0;
