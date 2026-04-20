@@ -131,6 +131,12 @@ async function loadAndStartQuiz() {
     <div class="question">
       <p><strong>${q.question_number}. ${q.question_text}</strong></p>
 
+      ${q.image_url ? `
+        <div class="question-image">
+          <img src="${q.image_url}" alt="vraag afbeelding" />
+        </div>
+      ` : ''}
+
       <label class="answer-option">
         <input type="radio" name="q${q.id}" value="A" />
         ${q.option_a}
