@@ -118,14 +118,26 @@ body {
   margin-bottom: 20px;
 }
 
+/* Input groep */
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #374151;
+}
+
 /* Input veld */
 .start-card input {
   width: 100%;
   padding: 12px;
-  margin-bottom: 15px;
   border-radius: 10px;
   border: 1px solid #ccc;
   font-size: 16px;
+  box-sizing: border-box;
 }
 
 /* Knop */
@@ -193,4 +205,23 @@ body {
 
 .dashboard-page #resetButton:hover {
   background: #dc2626;
+}
+
+.question-image img {
+  max-width: 100%;
+  height: auto;
+  margin: 10px 0;
+  border-radius: 8px;
+}
+
+.question-image {
+  text-align: center;
+}
+
+.question-image img {
+  max-width: 200Spx;   /* maximale breedte */
+  width: 100%;        /* schaalt netjes */
+  height: auto;       /* behoud verhoudingen */
+  margin: 10px 0;
+  border-radius: 8px;
 }
