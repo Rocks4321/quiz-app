@@ -20,6 +20,10 @@ function normalizeTeamName(name) {
 // Als er geen quiz parameter is, toon een foutmelding
 if (!Params.get('quiz')) {
   app.innerHTML = `
+    <div class="quiz-logo">
+      <img src="/logo-rnr.png" alt="logo" />
+    </div>
+
     <div class="container">
       <div class="error-card">
         <h1>Quiz App</h1>
@@ -63,6 +67,10 @@ async function loadAndStartQuiz() {
   console.log('URL params:', Params.get('quiz'))
 
   app.innerHTML = `
+    <div class="quiz-logo">
+      <img src="/logo-rnr.png" alt="logo" />
+    </div>
+    
     <div class="container">
       <div id="message"></div>
       <div id="quiz"></div>
