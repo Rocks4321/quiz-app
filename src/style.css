@@ -268,6 +268,7 @@ body {
   justify-content: center;
   align-items: center;
   padding: 24px;
+  padding-top: 120px;
 }
 
 .start-card,
@@ -362,6 +363,11 @@ button:active {
   max-width: 900px;
   margin: 0 auto;
   padding: 32px 20px 60px;
+}
+
+.container--quiz {
+  align-items: flex-start;
+  padding-top: 136px;
 }
 
 #quiz {
@@ -534,5 +540,45 @@ tr:hover td {
   td {
     padding: 10px 8px;
     font-size: 14px;
+  }
+}
+.quiz-logo {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.quiz-logo img {
+  width: 300px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.22));
+}
+
+@media (max-width: 1024px) {
+  .quiz-logo img {
+    width: 120px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+    padding-top: 88px;
+  }
+
+  .container--quiz {
+    padding-top: 96px;
+  }
+
+  .quiz-logo {
+    top: 14px;
+    right: 14px;
+  }
+
+  .quiz-logo img {
+    width: 78px;
   }
 }
