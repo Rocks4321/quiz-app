@@ -102,9 +102,9 @@ function renderTable(data) {
 
   data.forEach((row, index) => {
     let medal = ''
-    if (index === 0) medal = '🥇'
-    if (index === 1) medal = '🥈'
-    if (index === 2) medal = '🥉'
+    if (index === 0) medal = '\u{1F947}'
+    if (index === 1) medal = '\u{1F948}'
+    if (index === 2) medal = '\u{1F949}'
 
     html += `
       <tr>
