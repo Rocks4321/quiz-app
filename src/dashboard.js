@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-const logoRnr = `${import.meta.env.BASE_URL}public/logo-rnr.png`
+const logoRnr = `${import.meta.env.BASE_URL}logo-rnr.png`
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
@@ -24,54 +24,35 @@ document.querySelector('#app').innerHTML = `
 `
 
 const dashboardTableDiv = document.querySelector('#dashboardTable')
-console.log('dashboardTableDiv gevonden:', dashboardTableDiv)
-console.log('dashboardTableDiv:', dashboardTableDiv)
 const statsDiv = document.querySelector('#stats')
 const resetButton = document.querySelector('#resetButton')
 
 let allSubmissions = []
 
-function formatDateTime(dateString) {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleString('nl-NL')
-}
-
-function calculateTime(startedAt, submittedAt) {
-  if (!startedAt || !submittedAt) return '-'
-  const start = new Date(startedAt)
-  const end = new Date(submittedAt)
-  const diffMs = end - start
-  const diffSec = Math.floor(diffMs / 1000)
-  const minutes = Math.floor(diffSec / 60)
-  const seconds = diffSec % 60
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`
-}
-
 function renderStats(data) {
   const totalTeams = data.length
 
   const averageScore =
-  totalTeams > 0
-    ? (
-        data.reduce(
-          (sum, row) =>
-            sum +
-            (Number(row.correct_quiz1) || 0) +
-            (Number(row.correct_quiz2) || 0),
-          0
-        ) / totalTeams
-      ).toFixed(2)
-    : 0
+    totalTeams > 0
+      ? (
+          data.reduce(
+            (sum, row) =>
+              sum +
+              (Number(row.correct_quiz1) || 0) +
+              (Number(row.correct_quiz2) || 0),
+            0
+          ) / totalTeams
+        ).toFixed(2)
+      : 0
 
-const bestScore =
-  totalTeams > 0
-    ? Math.max(
-        ...data.map(
-          row => (Number(row.correct_quiz1) || 0) + (Number(row.correct_quiz2) || 0)
+  const bestScore =
+    totalTeams > 0
+      ? Math.max(
+          ...data.map(
+            (row) => (Number(row.correct_quiz1) || 0) + (Number(row.correct_quiz2) || 0)
+          )
         )
-      )
-    : 0
+      : 0
 
   statsDiv.innerHTML = `
     <div style="display: flex; gap: 20px; flex-wrap: wrap;">
@@ -130,9 +111,7 @@ function applyFilterAndRender() {
 async function loadDashboard() {
   try {
     console.log('loadDashboard gestart')
-    const { data, error } = await supabase
-      .from('Submissions')
-      .select('*')
+    const { data, error } = await supabase.from('Submissions').select('*')
 
     console.log('dashboard error:', error)
     console.log('dashboard data:', data)
@@ -147,7 +126,7 @@ async function loadDashboard() {
     const rows = data || []
     const teamMap = {}
 
-    rows.forEach(row => {
+    rows.forEach((row) => {
       const teamId = row.team_name || row.team_number || 'Onbekend'
 
       if (!teamMap[teamId]) {
@@ -157,7 +136,7 @@ async function loadDashboard() {
           quizzes_completed: 0,
           correct_quiz1: 0,
           correct_quiz2: 0,
-          total_score: 0
+          total_score: 0,
         }
       }
 
@@ -173,16 +152,16 @@ async function loadDashboard() {
 
     const result = Object.values(teamMap)
 
-   result.sort((a, b) => {
-  if (b.quizzes_completed !== a.quizzes_completed) {
-    return b.quizzes_completed - a.quizzes_completed
-  }
+    result.sort((a, b) => {
+      if (b.quizzes_completed !== a.quizzes_completed) {
+        return b.quizzes_completed - a.quizzes_completed
+      }
 
-  const totalCorrectA = (a.correct_quiz1 || 0) + (a.correct_quiz2 || 0)
-  const totalCorrectB = (b.correct_quiz1 || 0) + (b.correct_quiz2 || 0)
+      const totalCorrectA = (a.correct_quiz1 || 0) + (a.correct_quiz2 || 0)
+      const totalCorrectB = (b.correct_quiz1 || 0) + (b.correct_quiz2 || 0)
 
-  return totalCorrectB - totalCorrectA
-})
+      return totalCorrectB - totalCorrectA
+    })
 
     console.log(result)
     allSubmissions = result
@@ -192,18 +171,12 @@ async function loadDashboard() {
   }
 }
 
-
 resetButton.addEventListener('click', async () => {
-  const confirmed = window.confirm(
-    'Weet je zeker dat je alle inzendingen wilt verwijderen?'
-  )
+  const confirmed = window.confirm('Weet je zeker dat je alle inzendingen wilt verwijderen?')
 
   if (!confirmed) return
 
-  const { error } = await supabase
-    .from('Submissions')
-    .delete()
-    .neq('id', 0)
+  const { error } = await supabase.from('Submissions').delete().neq('id', 0)
 
   if (error) {
     console.error('Reset fout:', error)
@@ -224,9 +197,9 @@ supabase
     {
       event: '*',
       schema: 'public',
-      table: 'Submissions'
+      table: 'Submissions',
     },
-    payload => {
+    (payload) => {
       try {
         console.log('Realtime update:', payload)
         loadDashboard()
