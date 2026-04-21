@@ -1,9 +1,9 @@
 import './style.css'
 import { createClient } from '@supabase/supabase-js'
-import logoRnr from './assets/logo-rnr.png'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+const logoRnr = `${import.meta.env.BASE_URL}public/logo-rnr.png`
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
