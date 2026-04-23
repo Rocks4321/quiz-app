@@ -43,7 +43,7 @@ function showSuccessMessage(text) {
 function renderQuizLogo() {
   return `
     <div class="quiz-logo">
-      <img src="${logoRnr}" alt="Rocks 'n Rivers logo" />
+      <img src="/logo.png" alt="logo" />
     </div>
   `
 }
