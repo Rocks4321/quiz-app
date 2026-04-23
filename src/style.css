@@ -434,3 +434,10 @@ tr:hover td {
   text-align: center;
   margin-top: 15px;
 }
+.duplicate-message {
+  text-align: center;
+  color: #c62828;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 20px 0;
+}
