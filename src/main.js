@@ -237,6 +237,46 @@ async function loadAndStartQuiz() {
   document.querySelector('#submitButton').addEventListener('click', submitQuiz)
 }
 
+function renderFeedbackScreen(questions, answers) {
+  let html = `
+    ${renderQuizLogo()}
+    <div class="container container--quiz">
+      <div class="feedback-card">
+        <h1>Jullie antwoorden zijn ontvangen</h1>
+        <div class="feedback-list">
+  `
+
+  questions.forEach((q) => {
+    const given = answers.find(a => a.question_id === q.id)?.given_answer || '-'
+    const correct = q.correct_answer
+    const isCorrect = given === correct
+
+    const answerTextMap = {
+      A: q.option_a,
+      B: q.option_b,
+      C: q.option_c,
+      D: q.option_d || '-',
+    }
+
+    html += `
+      <div class="feedback-item ${isCorrect ? 'correct' : 'wrong'}">
+        <p><strong>${q.question_number}. ${q.question_text}</strong></p>
+        <p>Jullie antwoord: <strong>${given}</strong> - ${answerTextMap[given] || '-'}</p>
+        <p>Juiste antwoord: <strong>${correct}</strong> - ${answerTextMap[correct] || '-'}</p>
+        <p>${isCorrect ? '✅ Goed' : '❌ Fout'}</p>
+      </div>
+    `
+  })
+
+  html += `
+        </div>
+      </div>
+    </div>
+  `
+
+  app.innerHTML = html
+}
+
 async function submitQuiz(event) {
   event.preventDefault()
   console.log('submitQuiz gestart, POST_ID:', POST_ID, 'team:', teamNameGlobal)
@@ -356,6 +396,5 @@ async function submitQuiz(event) {
     return
   }
 
-  document.querySelector('#quiz').innerHTML = ''
-  showSuccessMessage('Jullie antwoorden zijn ontvangen.')
+  renderFeedbackScreen(loadedQuestions, answers)
 }
