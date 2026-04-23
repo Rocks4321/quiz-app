@@ -441,3 +441,43 @@ tr:hover td {
   font-weight: 700;
   margin: 20px 0;
 }
+.feedback-card {
+  width: 100%;
+  max-width: 900px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
+.feedback-card h1 {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.feedback-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feedback-item {
+  padding: 18px;
+  border-radius: 12px;
+  border-left: 6px solid #ccc;
+  background: #f9f9f9;
+}
+
+.feedback-item.correct {
+  border-left-color: #2e7d32;
+  background: #e8f5e9;
+}
+
+.feedback-item.wrong {
+  border-left-color: #c62828;
+  background: #fdecea;
+}
+
+.feedback-item p {
+  margin: 8px 0;
+}
