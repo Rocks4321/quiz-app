@@ -9,7 +9,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 document.querySelector('#app').innerHTML = `
   <div class="quiz-logo">
-    <img src="${logoRnr}" alt="Rocks 'n Rivers logo" />
+    <img src="/logo-rnr.png" alt="logo" />
   </div>
 
   <div class="dashboard-page">
