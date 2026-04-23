@@ -5,6 +5,7 @@ const app = document.querySelector('#app')
 let teamNameGlobal = ''
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+const logoRnr = `${import.meta.env.BASE_URL}logo-rnr.png`
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
@@ -13,16 +14,47 @@ let POST_ID = Number(Params.get('quiz')) || 1
 let startedAt = null
 let loadedQuestions = []
 
+function showMessage(text, type = 'info') {
+  const messageDiv = document.querySelector('#message')
+
+  messageDiv.textContent = text
+  messageDiv.className = `message ${type}`
+
+  // voor success: centreren in scherm
+  if (type === 'success') {
+    messageDiv.classList.add('centered')
+  } else {
+    messageDiv.classList.remove('centered')
+  }
+}
+
+function showSuccessMessage(text) {
+  const existing = document.querySelector('.success-popup')
+  if (existing) existing.remove()
+
+  const div = document.createElement('div')
+  div.className = 'success-popup'
+  div.textContent = text
+
+  document.body.appendChild(div)
+
+}
+
+function renderQuizLogo() {
+  return `
+    <div class="quiz-logo">
+      <img src="${logoRnr}" alt="Rocks 'n Rivers logo" />
+    </div>
+  `
+}
+
 function normalizeTeamName(name) {
   return name.trim().replace(/\s+/g, ' ')
 }
 
-// Als er geen quiz parameter is, toon een foutmelding
 if (!Params.get('quiz')) {
   app.innerHTML = `
-    <div class="quiz-logo">
-      <img src="/logo-rnr.png" alt="logo" />
-    </div>
+    ${renderQuizLogo()}
 
     <div class="container">
       <div class="error-card">
@@ -32,12 +64,13 @@ if (!Params.get('quiz')) {
     </div>
   `
 } else {
-  // Toon start scherm
   showStartScreen()
 }
 
 function showStartScreen() {
   app.innerHTML = `
+    ${renderQuizLogo()}
+
     <div class="container">
       <div class="start-card">
         <h1>Quiz ${Params.get('quiz')}</h1>
@@ -57,6 +90,7 @@ function showStartScreen() {
       document.querySelector('#message').textContent = 'Voer eerst een teamnaam in.'
       return
     }
+
     teamNameGlobal = teamName
     loadAndStartQuiz()
   })
@@ -67,29 +101,28 @@ async function loadAndStartQuiz() {
   console.log('URL params:', Params.get('quiz'))
 
   app.innerHTML = `
-    <div class="quiz-logo">
-      <img src="/logo-rnr.png" alt="logo" />
-    </div>
-    
-    <div class="container">
-      <div id="message"></div>
+    ${renderQuizLogo()}
+
+    <div class="container container--quiz">
       <div id="quiz"></div>
     </div>
   `
 
   const quizDiv = document.querySelector('#quiz')
-  const messageDiv = document.querySelector('#message')
-
-  messageDiv.textContent = ''
+  
 
   const teamName = normalizeTeamName(teamNameGlobal)
 
   if (!teamName) {
-    messageDiv.textContent = 'Voer eerst een teamnaam in.'
-    return
+  return
   }
 
-  console.log('Checking team submission in loadAndStartQuiz for team:', JSON.stringify(teamName), 'quiz:', POST_ID)
+  console.log(
+    'Checking team submission in loadAndStartQuiz for team:',
+    JSON.stringify(teamName),
+    'quiz:',
+    POST_ID
+  )
 
   const { data: existingRows, error: existingError } = await supabase
     .from('Submissions')
@@ -135,42 +168,53 @@ async function loadAndStartQuiz() {
   let html = '<h2>Vragen</h2>'
 
   data.forEach((q) => {
-  html += `
-    <div class="question">
-      <p><strong>${q.question_number}. ${q.question_text}</strong></p>
+    html += `
+      <div class="question">
+        <p><strong>${q.question_number}. ${q.question_text}</strong></p>
 
-      ${q.image_url ? `
-        <div class="question-image">
-          <img src="${q.image_url}" alt="vraag afbeelding" />
-        </div>
-      ` : ''}
+        ${
+          q.image_url
+            ? `
+          <div class="question-image">
+            <img src="${q.image_url}" alt="vraag afbeelding" />
+          </div>
+        `
+            : ''
+        }
 
-      <label class="answer-option">
-        <input type="radio" name="q${q.id}" value="A" />
-        ${q.option_a}
-      </label>
-
-      <label class="answer-option">
-        <input type="radio" name="q${q.id}" value="B" />
-        ${q.option_b}
-      </label>
-
-      <label class="answer-option">
-        <input type="radio" name="q${q.id}" value="C" />
-        ${q.option_c}
-      </label>
-
-      ${q.option_d ? `
         <label class="answer-option">
-          <input type="radio" name="q${q.id}" value="D" />
-          ${q.option_d}
+          <input type="radio" name="q${q.id}" value="A" />
+          ${q.option_a}
         </label>
-      ` : ''}
-    </div>
-  `
-})
 
-  html += `<button id="submitButton" type="button">Verzenden</button>`
+        <label class="answer-option">
+          <input type="radio" name="q${q.id}" value="B" />
+          ${q.option_b}
+        </label>
+
+        <label class="answer-option">
+          <input type="radio" name="q${q.id}" value="C" />
+          ${q.option_c}
+        </label>
+
+        ${
+          q.option_d
+            ? `
+          <label class="answer-option">
+            <input type="radio" name="q${q.id}" value="D" />
+            ${q.option_d}
+          </label>
+        `
+            : ''
+        }
+      </div>
+    `
+  })
+
+  html += `
+    <button id="submitButton" type="button">Verzenden</button>
+    <div id="message"></div>
+  `
 
   quizDiv.innerHTML = html
 
@@ -220,7 +264,7 @@ async function submitQuiz(event) {
     const selected = document.querySelector(`input[name="q${q.id}"]:checked`)
 
     if (!selected) {
-      document.querySelector('#message').textContent = 'Beantwoord alle vragen.'
+      showMessage('Beantwoord alle vragen.', 'error')
       return
     }
 
@@ -233,7 +277,7 @@ async function submitQuiz(event) {
 
     answers.push({
       question_id: q.id,
-      given_answer: givenAnswer
+      given_answer: givenAnswer,
     })
   }
 
@@ -246,10 +290,10 @@ async function submitQuiz(event) {
         started_at: startedAt,
         submitted_at: new Date().toISOString(),
         status: 'submitted',
-        score: score,
+        score,
         correct_answers: correctAnswers,
-        total_questions: loadedQuestions.length
-      }
+        total_questions: loadedQuestions.length,
+      },
     ])
     .select()
 
@@ -260,7 +304,7 @@ async function submitQuiz(event) {
       document.querySelector('#message').textContent = 'Deze quiz is al door jullie team ingediend.'
       return
     }
-    document.querySelector('#message').textContent = 'Fout bij opslaan van submission: ' + submissionError.message
+    document.querySelector('#message').textContent = `Fout bij opslaan van submission: ${submissionError.message}`
     return
   }
 
@@ -269,12 +313,10 @@ async function submitQuiz(event) {
   const rows = answers.map((a) => ({
     submission_id: submissionId,
     question_id: a.question_id,
-    given_answer: a.given_answer
+    given_answer: a.given_answer,
   }))
 
-  const { error: answersError } = await supabase
-    .from('submission_answers')
-    .insert(rows)
+  const { error: answersError } = await supabase.from('submission_answers').insert(rows)
 
   if (answersError) {
     console.error(answersError)
@@ -283,5 +325,5 @@ async function submitQuiz(event) {
   }
 
   document.querySelector('#quiz').innerHTML = ''
-  document.querySelector('#message').textContent = 'Jullie antwoorden zijn ontvangen.'
+  showSuccessMessage('Jullie antwoorden zijn ontvangen.')
 }
