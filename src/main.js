@@ -1,436 +1,329 @@
-:root {
-  --rnr-charcoal: #2f3128;
-  --rnr-charcoal-dark: #23251e;
-  --rnr-yellow: #f2c318;
-  --rnr-yellow-dark: #d8ab10;
-  --rnr-forest: #4f6b2a;
-  --rnr-forest-dark: #3f5621;
-  --rnr-card: #ffffff;
-  --rnr-text: #1f241b;
-  --rnr-text-light: #5c6552;
-  --rnr-border: #d9d4c7;
-  --rnr-danger: #b63b2f;
-  --rnr-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
-}
+import './style.css'
+import { createClient } from '@supabase/supabase-js'
 
-* {
-  box-sizing: border-box;
-}
+const app = document.querySelector('#app')
+let teamNameGlobal = ''
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+const logoRnr = `${import.meta.env.BASE_URL}logo-rnr.png`
 
-body {
-  margin: 0;
-  padding: 0;
-  font-family: Arial, sans-serif;
-  color: var(--rnr-text);
-  background:
-    linear-gradient(rgba(47, 49, 40, 0.72), rgba(47, 49, 40, 0.72)),
-    url("https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=80")
-      center/cover no-repeat fixed;
-}
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-#app {
-  min-height: 100vh;
-}
+const Params = new URLSearchParams(window.location.search)
+let POST_ID = Number(Params.get('quiz')) || 1
+let startedAt = null
+let loadedQuestions = []
 
-.container {
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 24px;
-  padding-top: 120px;
-}
+function showMessage(text, type = 'info') {
+  const messageDiv = document.querySelector('#message')
 
-.container--quiz {
-  align-items: flex-start;
-  padding-top: 136px;
-}
+  messageDiv.textContent = text
+  messageDiv.className = `message ${type}`
 
-.start-card,
-.error-card {
-  width: 100%;
-  max-width: 460px;
-  background: var(--rnr-card);
-  border-radius: 18px;
-  padding: 32px 28px;
-  box-shadow: var(--rnr-shadow);
-  border-top: 8px solid var(--rnr-yellow);
-  text-align: center;
-}
-
-.start-card h1,
-.error-card h1 {
-  margin: 0 0 18px;
-  color: var(--rnr-charcoal);
-  font-size: 32px;
-}
-
-.start-card p,
-.error-card p {
-  color: var(--rnr-text-light);
-  line-height: 1.5;
-}
-
-.input-group {
-  text-align: left;
-  margin: 18px 0 20px;
-}
-
-.input-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 700;
-  color: var(--rnr-charcoal);
-}
-
-.start-card input,
-.input-group input {
-  width: 100%;
-  padding: 14px 16px;
-  border: 2px solid var(--rnr-border);
-  border-radius: 12px;
-  font-size: 16px;
-  background: #fff;
-  color: var(--rnr-text);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.start-card input:focus,
-.input-group input:focus {
-  outline: none;
-  border-color: var(--rnr-yellow);
-  box-shadow: 0 0 0 4px rgba(242, 195, 24, 0.18);
-}
-
-button {
-  display: inline-block;
-  width: 100%;
-  padding: 14px 18px;
-  border: none;
-  border-radius: 12px;
-  background: var(--rnr-yellow);
-  color: var(--rnr-charcoal-dark);
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.08s ease, background 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
-}
-
-button:hover {
-  background: var(--rnr-yellow-dark);
-}
-
-button:active {
-  transform: translateY(1px);
-}
-
-#message {
-  margin-top: 16px;
-  font-weight: 700;
-  color: var(--rnr-forest-dark);
-}
-
-.quiz-page,
-.quiz-wrapper {
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 32px 20px 60px;
-}
-
-#quiz {
-  width: 100%;
-  max-width: 900px;
-}
-
-#quiz h2 {
-  margin: 0 0 20px;
-  color: #fff;
-  font-size: 34px;
-  text-align: center;
-}
-
-.question {
-  background: var(--rnr-card);
-  border-radius: 16px;
-  padding: 22px 20px;
-  margin-bottom: 18px;
-  box-shadow: var(--rnr-shadow);
-  border-left: 8px solid var(--rnr-forest);
-}
-
-.question p {
-  margin: 0 0 16px;
-  font-size: 18px;
-  line-height: 1.45;
-  color: var(--rnr-charcoal);
-}
-
-.answer-option {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-  padding: 12px 14px;
-  border: 1px solid var(--rnr-border);
-  border-radius: 12px;
-  cursor: pointer;
-  background: #fcfbf8;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.08s ease;
-}
-
-.answer-option:hover {
-  background: #f7f2df;
-  border-color: var(--rnr-yellow);
-}
-
-.answer-option input[type="radio"] {
-  margin: 0;
-  transform: scale(1.15);
-  accent-color: var(--rnr-forest);
-}
-
-.answer-option:has(input:checked) {
-  background: #eef5e5;
-  border-color: var(--rnr-forest);
-}
-
-.question-image {
-  text-align: center;
-  margin: 10px 0 16px;
-}
-
-.question-image img {
-  max-width: 260px;
-  width: 100%;
-  height: auto;
-  border-radius: 12px;
-  border: 3px solid var(--rnr-border);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-}
-
-.dashboard-page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 136px 20px 50px;
-}
-
-.dashboard-page h1 {
-  margin: 0 0 20px;
-  color: #fff;
-  font-size: 36px;
-  text-align: center;
-}
-
-.dashboard-page #stats {
-  background: rgba(255, 255, 255, 0.96);
-  border-radius: 14px;
-  padding: 18px;
-  margin-bottom: 20px;
-  box-shadow: var(--rnr-shadow);
-}
-
-.dashboard-page #resetButton {
-  display: block;
-  width: 100%;
-  margin-bottom: 20px;
-  background: var(--rnr-danger);
-  color: #fff;
-}
-
-.dashboard-page #resetButton:hover {
-  background: #992d24;
-}
-
-#dashboardTable {
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 14px;
-  padding: 14px;
-  box-shadow: var(--rnr-shadow);
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-  overflow: hidden;
-  border-radius: 12px;
-}
-
-th,
-td {
-  padding: 12px 14px;
-  text-align: left;
-  border-bottom: 1px solid #ece7da;
-}
-
-th {
-  background: var(--rnr-charcoal);
-  color: #fff;
-  font-size: 15px;
-}
-
-tr:nth-child(even) td {
-  background: #faf8f2;
-}
-
-tr:hover td {
-  background: #f4f0e3;
-}
-
-.quiz-logo {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  z-index: 1000;
-  pointer-events: none;
-}
-
-.quiz-logo img {
-  width: 300px;
-  height: auto;
-  display: block;
-  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.22));
-}
-
-@media (max-width: 1024px) {
-  .quiz-logo img {
-    width: 120px;
+  // voor success: centreren in scherm
+  if (type === 'success') {
+    messageDiv.classList.add('centered')
+  } else {
+    messageDiv.classList.remove('centered')
   }
 }
 
-@media (max-width: 768px) {
-  .container {
-    padding: 16px;
-    padding-top: 88px;
-  }
+function showSuccessMessage(text) {
+  const existing = document.querySelector('.success-popup')
+  if (existing) existing.remove()
 
-  .container--quiz {
-    padding-top: 96px;
-  }
+  const div = document.createElement('div')
+  div.className = 'success-popup'
+  div.textContent = text
 
-  .quiz-logo {
-    top: 14px;
-    right: 14px;
-  }
+  document.body.appendChild(div)
 
-  .quiz-logo img {
-    width: 78px;
-  }
 }
 
-@media (max-width: 640px) {
-  .start-card,
-  .error-card {
-    padding: 24px 18px;
-  }
-
-  .start-card h1,
-  .error-card h1 {
-    font-size: 28px;
-  }
-
-  .question {
-    padding: 18px 16px;
-  }
-
-  .question p {
-    font-size: 17px;
-  }
-
-  .dashboard-page {
-    padding-top: 96px;
-  }
-
-  .dashboard-page h1 {
-    font-size: 30px;
-  }
-
-  th,
-  td {
-    padding: 10px 8px;
-    font-size: 14px;
-  }
+function renderQuizLogo() {
+  return `
+    <div class="quiz-logo">
+      <img src="${logoRnr}" alt="Rocks 'n Rivers logo" />
+    </div>
+  `
 }
 
-.message {
-  text-align: center;
-  font-size: 20px;
-  font-weight: 700;
-  margin-top: 30px;
-  padding: 20px;
-  border-radius: 12px;
+function normalizeTeamName(name) {
+  return name.trim().replace(/\s+/g, ' ')
 }
 
-.message.success {
-  background-color: #e8f5e9;
-  color: #2e7d32;
+if (!Params.get('quiz')) {
+  app.innerHTML = `
+    ${renderQuizLogo()}
+
+    <div class="container">
+      <div class="error-card">
+        <h1>Quiz App</h1>
+        <p>Scan een QR-code om een quiz te starten.</p>
+      </div>
+    </div>
+  `
+} else {
+  showStartScreen()
 }
 
-.message.error {
-  background-color: #fdecea;
-  color: #c62828;
+function showStartScreen() {
+  app.innerHTML = `
+    ${renderQuizLogo()}
+
+    <div class="container">
+      <div class="start-card">
+        <h1>Quiz ${Params.get('quiz')}</h1>
+        <div class="input-group">
+          <label for="teamInput">Voer je teamnaam in:</label>
+          <input type="text" id="teamInput" placeholder="Teamnaam" />
+        </div>
+        <button id="startButton">Start Quiz</button>
+        <div id="message"></div>
+      </div>
+    </div>
+  `
+
+  document.querySelector('#startButton').addEventListener('click', () => {
+    const teamName = normalizeTeamName(document.querySelector('#teamInput').value)
+    if (!teamName) {
+      document.querySelector('#message').textContent = 'Voer eerst een teamnaam in.'
+      return
+    }
+
+    teamNameGlobal = teamName
+    loadAndStartQuiz()
+  })
 }
 
-.message.info {
-  background-color: #fff8e1;
-  color: #8a6d00;
-}
-.message {
-  font-size: 18px;
-  font-weight: 600;
-  margin-top: 15px;
-  padding: 12px;
-  border-radius: 10px;
-}
+async function loadAndStartQuiz() {
+  console.log('POST_ID:', POST_ID)
+  console.log('URL params:', Params.get('quiz'))
 
-/* FOUT (onder knop) */
-.message.error {
-  background-color: #fdecea;
-  color: #c62828;
-  text-align: center;
-}
+  app.innerHTML = `
+    ${renderQuizLogo()}
 
-/* SUCCESS (midden scherm) */
-.message.success.centered {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+    <div class="container container--quiz">
+      <div id="quiz"></div>
+    </div>
+  `
+
+  const quizDiv = document.querySelector('#quiz')
   
-  background-color: #e8f5e9;
-  color: #2e7d32;
 
-  padding: 30px;
-  font-size: 22px;
-  text-align: center;
-  z-index: 2000;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  const teamName = normalizeTeamName(teamNameGlobal)
+
+  if (!teamName) {
+  return
+  }
+
+  console.log(
+    'Checking team submission in loadAndStartQuiz for team:',
+    JSON.stringify(teamName),
+    'quiz:',
+    POST_ID
+  )
+
+  const { data: existingRows, error: existingError } = await supabase
+    .from('Submissions')
+    .select('id, team_name, post_id')
+    .eq('team_name', teamName)
+    .eq('post_id', POST_ID)
+    .limit(1)
+
+  console.log('Query result existingRows:', existingRows)
+
+  if (existingError) {
+    console.error(existingError)
+    messageDiv.textContent = 'Fout bij controleren van eerdere inzending.'
+    return
+  }
+
+  if (existingRows && existingRows.length > 0) {
+    messageDiv.textContent = 'Jullie team heeft deze quiz al ingediend.'
+    return
+  }
+
+  startedAt = new Date().toISOString()
+
+  const { data, error } = await supabase
+    .from('Questions')
+    .select('*')
+    .eq('post_id', POST_ID)
+    .order('question_number', { ascending: true })
+
+  if (error) {
+    console.error(error)
+    messageDiv.textContent = 'Fout bij ophalen vragen.'
+    return
+  }
+
+  if (!data || data.length === 0) {
+    messageDiv.textContent = 'Geen vragen gevonden voor deze quiz.'
+    return
+  }
+
+  loadedQuestions = data
+
+  let html = '<h2>Vragen</h2>'
+
+  data.forEach((q) => {
+    html += `
+      <div class="question">
+        <p><strong>${q.question_number}. ${q.question_text}</strong></p>
+
+        ${
+          q.image_url
+            ? `
+          <div class="question-image">
+            <img src="${q.image_url}" alt="vraag afbeelding" />
+          </div>
+        `
+            : ''
+        }
+
+        <label class="answer-option">
+          <input type="radio" name="q${q.id}" value="A" />
+          ${q.option_a}
+        </label>
+
+        <label class="answer-option">
+          <input type="radio" name="q${q.id}" value="B" />
+          ${q.option_b}
+        </label>
+
+        <label class="answer-option">
+          <input type="radio" name="q${q.id}" value="C" />
+          ${q.option_c}
+        </label>
+
+        ${
+          q.option_d
+            ? `
+          <label class="answer-option">
+            <input type="radio" name="q${q.id}" value="D" />
+            ${q.option_d}
+          </label>
+        `
+            : ''
+        }
+      </div>
+    `
+  })
+
+  html += `
+    <button id="submitButton" type="button">Verzenden</button>
+    <div id="message"></div>
+  `
+
+  quizDiv.innerHTML = html
+
+  document.querySelector('#submitButton').addEventListener('click', submitQuiz)
 }
-.success-popup {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
 
-  background-color: #e8f5e9;
-  color: #2e7d32;
+async function submitQuiz(event) {
+  event.preventDefault()
+  console.log('submitQuiz gestart, POST_ID:', POST_ID, 'team:', teamNameGlobal)
 
-  padding: 30px 40px;
-  border-radius: 12px;
+  document.querySelector('#message').textContent = ''
 
-  font-size: 22px;
-  font-weight: bold;
-  text-align: center;
+  const teamName = normalizeTeamName(teamNameGlobal)
 
-  z-index: 9999;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-}
-.message.error {
-  background-color: #fdecea;
-  color: #c62828;
-  text-align: center;
-  margin-top: 15px;
+  if (!teamName) {
+    document.querySelector('#message').textContent = 'Geen teamnaam ingevuld.'
+    return
+  }
+
+  console.log('Checking existing submissions for team:', JSON.stringify(teamName), 'quiz:', POST_ID)
+
+  const { data: existingRows, error: existingError } = await supabase
+    .from('Submissions')
+    .select('id, team_name, post_id')
+    .eq('team_name', teamName)
+    .eq('post_id', POST_ID)
+    .limit(1)
+
+  console.log('Query result existingRows:', existingRows)
+
+  if (existingError) {
+    console.error(existingError)
+    document.querySelector('#message').textContent = 'Fout bij controleren van eerdere inzending.'
+    return
+  }
+
+  if (existingRows && existingRows.length > 0) {
+    document.querySelector('#message').textContent = 'Deze quiz is al door jullie team ingediend.'
+    return
+  }
+
+  const answers = []
+  let score = 0
+  let correctAnswers = 0
+
+  for (const q of loadedQuestions) {
+    const selected = document.querySelector(`input[name="q${q.id}"]:checked`)
+
+    if (!selected) {
+      showMessage('Beantwoord alle vragen.', 'error')
+      return
+    }
+
+    const givenAnswer = selected.value
+
+    if (givenAnswer === q.correct_answer) {
+      score += 1
+      correctAnswers += 1
+    }
+
+    answers.push({
+      question_id: q.id,
+      given_answer: givenAnswer,
+    })
+  }
+
+  const { data: submissionData, error: submissionError } = await supabase
+    .from('Submissions')
+    .insert([
+      {
+        team_name: teamName,
+        post_id: POST_ID,
+        started_at: startedAt,
+        submitted_at: new Date().toISOString(),
+        status: 'submitted',
+        score,
+        correct_answers: correctAnswers,
+        total_questions: loadedQuestions.length,
+      },
+    ])
+    .select()
+
+  if (submissionError) {
+    console.error('Insert error:', submissionError)
+    console.log('Insert error full:', JSON.stringify(submissionError, null, 2))
+    if (submissionError.code === '23505') {
+      document.querySelector('#message').textContent = 'Deze quiz is al door jullie team ingediend.'
+      return
+    }
+    document.querySelector('#message').textContent = `Fout bij opslaan van submission: ${submissionError.message}`
+    return
+  }
+
+  const submissionId = submissionData?.[0]?.id
+
+  const rows = answers.map((a) => ({
+    submission_id: submissionId,
+    question_id: a.question_id,
+    given_answer: a.given_answer,
+  }))
+
+  const { error: answersError } = await supabase.from('submission_answers').insert(rows)
+
+  if (answersError) {
+    console.error(answersError)
+    document.querySelector('#message').textContent = 'Fout bij opslaan van antwoorden.'
+    return
+  }
+
+  document.querySelector('#quiz').innerHTML = ''
+  showSuccessMessage('Jullie antwoorden zijn ontvangen.')
 }
