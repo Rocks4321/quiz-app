@@ -43,7 +43,7 @@ function showSuccessMessage(text) {
 function renderQuizLogo() {
   return `
     <div class="quiz-logo">
-      <img src="/logo.png" alt="logo" />
+      <img src="/logo-rnr.png" alt="logo" />
     </div>
   `
 }
