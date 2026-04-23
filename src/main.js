@@ -238,38 +238,58 @@ async function loadAndStartQuiz() {
 }
 
 function renderFeedbackScreen(questions, answers) {
+  const totalQuestions = questions.length
+
+  const wrongQuestions = questions.filter((q) => {
+    const given = answers.find(a => a.question_id === q.id)?.given_answer || '-'
+    return given !== q.correct_answer
+  })
+
+  const correctCount = totalQuestions - wrongQuestions.length
+
   let html = `
     ${renderQuizLogo()}
     <div class="container container--quiz">
       <div class="feedback-card">
         <h1>Jullie antwoorden zijn ontvangen</h1>
-        <div class="feedback-list">
+        <div class="feedback-score">
+          🎯 Score: ${correctCount} / ${totalQuestions} goed
+        </div>
   `
 
-  questions.forEach((q) => {
-    const given = answers.find(a => a.question_id === q.id)?.given_answer || '-'
-    const correct = q.correct_answer
-    const isCorrect = given === correct
-
-    const answerTextMap = {
-      A: q.option_a,
-      B: q.option_b,
-      C: q.option_c,
-      D: q.option_d || '-',
-    }
-
+  if (wrongQuestions.length === 0) {
     html += `
-      <div class="feedback-item ${isCorrect ? 'correct' : 'wrong'}">
-        <p><strong>${q.question_number}. ${q.question_text}</strong></p>
-        <p>Jullie antwoord: <strong>${given}</strong> - ${answerTextMap[given] || '-'}</p>
-        <p>Juiste antwoord: <strong>${correct}</strong> - ${answerTextMap[correct] || '-'}</p>
-        <p>${isCorrect ? '✅ Goed' : '❌ Fout'}</p>
+      <div class="feedback-perfect">
+        ✅ Alles goed! Sterk gedaan.
       </div>
     `
-  })
+  } else {
+    html += `<div class="feedback-list">`
+
+    wrongQuestions.forEach((q) => {
+      const given = answers.find(a => a.question_id === q.id)?.given_answer || '-'
+      const correct = q.correct_answer
+
+      const answerTextMap = {
+        A: q.option_a,
+        B: q.option_b,
+        C: q.option_c,
+        D: q.option_d || '-',
+      }
+
+      html += `
+        <div class="feedback-item wrong">
+          <p><strong>${q.question_number}. ${q.question_text}</strong></p>
+          <p>Jullie antwoord: <strong>${given}</strong> - ${answerTextMap[given] || '-'}</p>
+          <p>Juiste antwoord: <strong>${correct}</strong> - ${answerTextMap[correct] || '-'}</p>
+        </div>
+      `
+    })
+
+    html += `</div>`
+  }
 
   html += `
-        </div>
       </div>
     </div>
   `
