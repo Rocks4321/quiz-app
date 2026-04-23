@@ -5,7 +5,7 @@ const app = document.querySelector('#app')
 let teamNameGlobal = ''
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-const logoRnr = `${import.meta.env.BASE_URL}logo-rnr.png`
+
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
@@ -17,10 +17,14 @@ let loadedQuestions = []
 function showMessage(text, type = 'info') {
   const messageDiv = document.querySelector('#message')
 
+  if (!messageDiv) {
+    console.warn('messageDiv bestaat nog niet')
+    return
+  }
+
   messageDiv.textContent = text
   messageDiv.className = `message ${type}`
 
-  // voor success: centreren in scherm
   if (type === 'success') {
     messageDiv.classList.add('centered')
   } else {
@@ -135,14 +139,26 @@ async function loadAndStartQuiz() {
 
   if (existingError) {
     console.error(existingError)
-    messageDiv.textContent = 'Fout bij controleren van eerdere inzending.'
+    showMessage('Fout bij controleren van eerdere inzending.', 'error')
     return
   }
 
   if (existingRows && existingRows.length > 0) {
-    messageDiv.textContent = 'Jullie team heeft deze quiz al ingediend.'
-    return
-  }
+  app.innerHTML = `
+    ${renderQuizLogo()}
+
+    <div class="container">
+      <div class="start-card">
+        <h1>Quiz ${Params.get('quiz')}</h1>
+        <p class="duplicate-message">Jullie team heeft deze quiz al ingediend.</p>
+        <button id="backButton" type="button">Terug</button>
+      </div>
+    </div>
+  `
+
+  document.querySelector('#backButton').addEventListener('click', showStartScreen)
+  return
+}
 
   startedAt = new Date().toISOString()
 
@@ -154,12 +170,12 @@ async function loadAndStartQuiz() {
 
   if (error) {
     console.error(error)
-    messageDiv.textContent = 'Fout bij ophalen vragen.'
+    showMessage('Fout bij ophalen vragen.', 'error')
     return
   }
 
   if (!data || data.length === 0) {
-    messageDiv.textContent = 'Geen vragen gevonden voor deze quiz.'
+    showMessage('Geen vragen gevonden voor deze quiz.', 'error')
     return
   }
 
@@ -225,12 +241,12 @@ async function submitQuiz(event) {
   event.preventDefault()
   console.log('submitQuiz gestart, POST_ID:', POST_ID, 'team:', teamNameGlobal)
 
-  document.querySelector('#message').textContent = ''
+  showMessage('', 'info')
 
   const teamName = normalizeTeamName(teamNameGlobal)
 
   if (!teamName) {
-    document.querySelector('#message').textContent = 'Geen teamnaam ingevuld.'
+    showMessage('Geen teamnaam ingevuld.', 'error')
     return
   }
 
@@ -247,12 +263,24 @@ async function submitQuiz(event) {
 
   if (existingError) {
     console.error(existingError)
-    document.querySelector('#message').textContent = 'Fout bij controleren van eerdere inzending.'
+    showMessage('Fout bij controleren van eerdere inzending.', 'error')
     return
   }
 
   if (existingRows && existingRows.length > 0) {
-    document.querySelector('#message').textContent = 'Deze quiz is al door jullie team ingediend.'
+    app.innerHTML = `
+      ${renderQuizLogo()}
+
+      <div class="container">
+        <div class="start-card">
+          <h1>Quiz ${Params.get('quiz')}</h1>
+          <p class="duplicate-message">Jullie team heeft deze quiz al ingediend.</p>
+          <button id="backButton" type="button">Terug</button>
+        </div>
+      </div>
+    `
+
+    document.querySelector('#backButton').addEventListener('click', showStartScreen)
     return
   }
 
@@ -300,11 +328,13 @@ async function submitQuiz(event) {
   if (submissionError) {
     console.error('Insert error:', submissionError)
     console.log('Insert error full:', JSON.stringify(submissionError, null, 2))
+
     if (submissionError.code === '23505') {
-      document.querySelector('#message').textContent = 'Deze quiz is al door jullie team ingediend.'
+      showMessage('Deze quiz is al door jullie team ingediend.', 'error')
       return
     }
-    document.querySelector('#message').textContent = `Fout bij opslaan van submission: ${submissionError.message}`
+
+    showMessage(`Fout bij opslaan van submission: ${submissionError.message}`, 'error')
     return
   }
 
@@ -316,11 +346,13 @@ async function submitQuiz(event) {
     given_answer: a.given_answer,
   }))
 
-  const { error: answersError } = await supabase.from('submission_answers').insert(rows)
+  const { error: answersError } = await supabase
+    .from('submission_answers')
+    .insert(rows)
 
   if (answersError) {
     console.error(answersError)
-    document.querySelector('#message').textContent = 'Fout bij opslaan van antwoorden.'
+    showMessage('Fout bij opslaan van antwoorden.', 'error')
     return
   }
 
