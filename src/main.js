@@ -72,16 +72,26 @@ if (!Params.get('quiz')) {
 }
 
 function showStartScreen() {
+  const savedTeam = localStorage.getItem('teamName')
+
   app.innerHTML = `
     ${renderQuizLogo()}
 
     <div class="container">
       <div class="start-card">
         <h1>Quiz ${Params.get('quiz')}</h1>
-        <div class="input-group">
-          <label for="teamInput">Voer je teamnaam in:</label>
-          <input type="text" id="teamInput" placeholder="Teamnaam" />
-        </div>
+
+        ${
+          savedTeam
+            ? `<p><strong>Team: ${savedTeam}</strong></p>`
+            : `
+              <div class="input-group">
+                <label for="teamInput">Voer je teamnaam in:</label>
+                <input type="text" id="teamInput" placeholder="Teamnaam" />
+              </div>
+            `
+        }
+
         <button id="startButton">Start Quiz</button>
         <div id="message"></div>
       </div>
@@ -89,9 +99,12 @@ function showStartScreen() {
   `
 
   document.querySelector('#startButton').addEventListener('click', () => {
-    const teamName = normalizeTeamName(document.querySelector('#teamInput').value)
+    const teamName =
+      savedTeam ||
+      normalizeTeamName(document.querySelector('#teamInput')?.value)
+
     if (!teamName) {
-      document.querySelector('#message').textContent = 'Voer eerst een teamnaam in.'
+      showMessage('Voer eerst een teamnaam in.', 'error')
       return
     }
 
@@ -116,6 +129,44 @@ async function loadAndStartQuiz() {
   
 
   const teamName = normalizeTeamName(teamNameGlobal)
+  const { data: teamRows, error: teamError } = await supabase
+  .from('Teams')
+  .select('team_name')
+  .eq('team_name', teamName)
+  .limit(1)
+
+if (teamError) {
+  console.error(teamError)
+  app.innerHTML = `
+    ${renderQuizLogo()}
+
+    <div class="container">
+      <div class="start-card">
+        <h1>Quiz ${Params.get('quiz')}</h1>
+        <p class="duplicate-message">Fout bij controleren van teamnaam.</p>
+        <button id="backButton" type="button">Terug</button>
+      </div>
+    </div>
+  `
+  document.querySelector('#backButton').addEventListener('click', showStartScreen)
+  return
+}
+
+if (!teamRows || teamRows.length === 0) {
+  app.innerHTML = `
+    ${renderQuizLogo()}
+
+    <div class="container">
+      <div class="start-card">
+        <h1>Quiz ${Params.get('quiz')}</h1>
+        <p class="duplicate-message">Deze teamnaam is niet geregistreerd. Registreer je team eerst.</p>
+        <button id="backButton" type="button">Terug</button>
+      </div>
+    </div>
+  `
+  document.querySelector('#backButton').addEventListener('click', showStartScreen)
+  return
+}
 
   if (!teamName) {
   return
@@ -240,56 +291,48 @@ async function loadAndStartQuiz() {
 function renderFeedbackScreen(questions, answers) {
   const totalQuestions = questions.length
 
-  const wrongQuestions = questions.filter((q) => {
+  const correctCount = questions.filter((q) => {
     const given = answers.find(a => a.question_id === q.id)?.given_answer || '-'
-    return given !== q.correct_answer
-  })
-
-  const correctCount = totalQuestions - wrongQuestions.length
+    return given === q.correct_answer
+  }).length
 
   let html = `
     ${renderQuizLogo()}
     <div class="container container--quiz">
       <div class="feedback-card">
         <h1>Jullie antwoorden zijn ontvangen</h1>
+
         <div class="feedback-score">
           🎯 Score: ${correctCount} / ${totalQuestions} goed
         </div>
+
+        <div class="feedback-list">
   `
 
-  if (wrongQuestions.length === 0) {
+  questions.forEach((q) => {
+    const given = answers.find(a => a.question_id === q.id)?.given_answer || '-'
+    const correct = q.correct_answer
+    const isCorrect = given === correct
+
+    const answerTextMap = {
+      A: q.option_a,
+      B: q.option_b,
+      C: q.option_c,
+      D: q.option_d || '-',
+    }
+
     html += `
-      <div class="feedback-perfect">
-        ✅ Alles goed! Sterk gedaan.
+      <div class="feedback-item ${isCorrect ? 'correct' : 'wrong'}">
+        <p><strong>${q.question_number}. ${q.question_text}</strong></p>
+        <p>Jullie antwoord: <strong>${given}</strong> - ${answerTextMap[given] || '-'}</p>
+        <p>Juiste antwoord: <strong>${correct}</strong> - ${answerTextMap[correct] || '-'}</p>
+        <p>${isCorrect ? '✅ Goed' : '❌ Fout'}</p>
       </div>
     `
-  } else {
-    html += `<div class="feedback-list">`
-
-    wrongQuestions.forEach((q) => {
-      const given = answers.find(a => a.question_id === q.id)?.given_answer || '-'
-      const correct = q.correct_answer
-
-      const answerTextMap = {
-        A: q.option_a,
-        B: q.option_b,
-        C: q.option_c,
-        D: q.option_d || '-',
-      }
-
-      html += `
-        <div class="feedback-item wrong">
-          <p><strong>${q.question_number}. ${q.question_text}</strong></p>
-          <p>Jullie antwoord: <strong>${given}</strong> - ${answerTextMap[given] || '-'}</p>
-          <p>Juiste antwoord: <strong>${correct}</strong> - ${answerTextMap[correct] || '-'}</p>
-        </div>
-      `
-    })
-
-    html += `</div>`
-  }
+  })
 
   html += `
+        </div>
       </div>
     </div>
   `
