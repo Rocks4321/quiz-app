@@ -29,8 +29,9 @@ const resetButton = document.querySelector('#resetButton')
 
 let allSubmissions = []
 
-function renderStats(data) {
-  const totalTeams = data.length
+function renderStats(data, teams = []) {
+  const totalTeams = teams.length
+  const teamsWithSubmissions = data.length
 
   const averageScore =
     totalTeams > 0
@@ -55,12 +56,13 @@ function renderStats(data) {
       : 0
 
   statsDiv.innerHTML = `
-    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-      <div><strong>Totaal aantal teams:</strong> ${totalTeams}</div>
-      <div><strong>Gemiddelde totaal score:</strong> ${averageScore}</div>
-      <div><strong>Hoogste totaal score:</strong> ${bestScore}</div>
-    </div>
-  `
+  <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+    <div><strong>Geregistreerde teams:</strong> ${totalTeams}</div>
+    <div><strong>Teams met inzendingen:</strong> ${teamsWithSubmissions}</div>
+    <div><strong>Gemiddelde totaal score:</strong> ${averageScore}</div>
+    <div><strong>Hoogste totaal score:</strong> ${bestScore}</div>
+  </div>
+`
 }
 
 function renderTable(data) {
@@ -77,6 +79,8 @@ function renderTable(data) {
         <th>Aantal quizen gemaakt</th>
         <th>Goeie antwoorden quiz 1</th>
         <th>Goeie antwoorden quiz 2</th>
+        <th>Goeie antwoorden quiz 3</th>
+        <th>Goeie antwoorden quiz 4</th>
         <th>Score totaal</th>
       </tr>
   `
@@ -89,13 +93,15 @@ function renderTable(data) {
 
     html += `
       <tr>
-        <td>${medal} ${index + 1}</td>
-        <td>${row.team_name || row.team_number || '-'}</td>
-        <td>${row.quizzes_completed}</td>
-        <td>${row.correct_quiz1}</td>
-        <td>${row.correct_quiz2}</td>
-        <td>${row.total_score}</td>
-      </tr>
+       <td>${medal} ${index + 1}</td>
+       <td>${row.team_name || row.team_number || '-'}</td>
+       <td>${row.quizzes_completed}</td>
+       <td>${row.correct_quiz1}</td>
+       <td>${row.correct_quiz2}</td>
+       <td>${row.correct_quiz3}</td>
+       <td>${row.correct_quiz4}</td>
+       <td>${row.total_score ?? 0}</td>
+     </tr>
     `
   })
 
@@ -104,17 +110,20 @@ function renderTable(data) {
 }
 
 function applyFilterAndRender() {
-  renderStats(allSubmissions)
   renderTable(allSubmissions)
 }
 
 async function loadDashboard() {
   try {
     console.log('loadDashboard gestart')
-    const { data, error } = await supabase.from('Submissions').select('*')
 
-    console.log('dashboard error:', error)
-    console.log('dashboard data:', data)
+    const { data, error } = await supabase
+      .from('Submissions')
+      .select('*')
+
+    const { data: teamsData, error: teamsError } = await supabase
+      .from('Teams')
+      .select('team_name')
 
     if (error) {
       console.error('Fout bij ophalen dashboard:', error)
@@ -123,30 +132,39 @@ async function loadDashboard() {
       return
     }
 
+    if (teamsError) {
+      console.error('Fout bij ophalen teams:', teamsError)
+    }
+
     const rows = data || []
     const teamMap = {}
 
-    rows.forEach((row) => {
-      const teamId = row.team_name || row.team_number || 'Onbekend'
+        rows.forEach(row => {
+      const teamId = row.team_name || 'Onbekend'
 
       if (!teamMap[teamId]) {
         teamMap[teamId] = {
-          team_name: row.team_name || null,
-          team_number: row.team_number || null,
+          team_name: row.team_name || 'Onbekend',
           quizzes_completed: 0,
           correct_quiz1: 0,
           correct_quiz2: 0,
-          total_score: 0,
+          correct_quiz3: 0,
+          correct_quiz4: 0,
+          total_score: 0
         }
       }
 
       teamMap[teamId].quizzes_completed += 1
-      teamMap[teamId].total_score += Number(row.score) || 0
+      teamMap[teamId].total_score += Number(row.correct_answers) || 0
 
       if (row.post_id === 1) {
         teamMap[teamId].correct_quiz1 += Number(row.correct_answers) || 0
       } else if (row.post_id === 2) {
         teamMap[teamId].correct_quiz2 += Number(row.correct_answers) || 0
+      } else if (row.post_id === 3) {
+        teamMap[teamId].correct_quiz3 += Number(row.correct_answers) || 0
+      } else if (row.post_id === 4) {
+        teamMap[teamId].correct_quiz4 += Number(row.correct_answers) || 0
       }
     })
 
@@ -156,37 +174,18 @@ async function loadDashboard() {
       if (b.quizzes_completed !== a.quizzes_completed) {
         return b.quizzes_completed - a.quizzes_completed
       }
-
-      const totalCorrectA = (a.correct_quiz1 || 0) + (a.correct_quiz2 || 0)
-      const totalCorrectB = (b.correct_quiz1 || 0) + (b.correct_quiz2 || 0)
-
-      return totalCorrectB - totalCorrectA
+      return b.total_score - a.total_score
     })
 
-    console.log(result)
     allSubmissions = result
-    applyFilterAndRender()
+    renderStats(result, teamsData || [])
+    renderTable(result)
+
   } catch (err) {
     console.error('Error in loadDashboard:', err)
+    dashboardTableDiv.innerHTML = '<p>Er ging iets mis bij laden van het dashboard.</p>'
   }
 }
-
-resetButton.addEventListener('click', async () => {
-  const confirmed = window.confirm('Weet je zeker dat je alle inzendingen wilt verwijderen?')
-
-  if (!confirmed) return
-
-  const { error } = await supabase.from('Submissions').delete().neq('id', 0)
-
-  if (error) {
-    console.error('Reset fout:', error)
-    alert('Reset mislukt. Controleer je database policies / rechten.')
-    return
-  }
-
-  alert('Alle inzendingen zijn verwijderd.')
-  loadDashboard()
-})
 
 loadDashboard()
 
@@ -209,3 +208,36 @@ supabase
     }
   )
   .subscribe()
+
+resetButton.addEventListener('click', async () => {
+  const confirmed = window.confirm(
+    'Weet je zeker dat je alle inzendingen en teamnamen wilt verwijderen?'
+  )
+
+  if (!confirmed) return
+
+  const { error: submissionsError } = await supabase
+    .from('Submissions')
+    .delete()
+    .not('team_name', 'is', null)
+
+  if (submissionsError) {
+    console.error('Reset submissions fout:', submissionsError)
+    alert('Reset van inzendingen mislukt.')
+    return
+  }
+
+    const { error: teamsError } = await supabase
+    .from('Teams')
+    .delete()
+    .not('team_name', 'is', null)
+
+  if (teamsError) {
+    console.error('Reset teams fout:', teamsError)
+    alert('Inzendingen zijn verwijderd, maar teamnamen verwijderen is mislukt.')
+    return
+  }
+
+  alert('Alle inzendingen en teamnamen zijn verwijderd.')
+  loadDashboard()
+})
