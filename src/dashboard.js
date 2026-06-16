@@ -20,12 +20,15 @@ document.querySelector('#app').innerHTML = `
     <div id="stats">Laden van statistieken...</div>
 
     <div id="dashboardTable">Laden...</div>
+
+    <div id="quizOverview"></div>
   </div>
 `
 
 const dashboardTableDiv = document.querySelector('#dashboardTable')
 const statsDiv = document.querySelector('#stats')
 const resetButton = document.querySelector('#resetButton')
+const quizOverviewDiv = document.querySelector('#quizOverview')
 
 let allSubmissions = []
 
@@ -109,6 +112,100 @@ function renderTable(data) {
   dashboardTableDiv.innerHTML = html
 }
 
+async function renderQuizButtons() {
+  console.log('renderQuizButtons gestart')
+  const { data, error } = await supabase
+    .from('Questions')
+    .select('post_id')
+    .order('post_id', { ascending: true })
+
+  if (error) {
+    console.error('Fout bij ophalen quizzen:', error)
+    quizOverviewDiv.innerHTML = '<p>Fout bij ophalen quizzen.</p>'
+    return
+  }
+
+  const quizIds = [...new Set((data || []).map(row => row.post_id))]
+
+  let html = `
+    <div class="quiz-overview-section">
+      <h2>Quizvragen bekijken</h2>
+      <div class="quiz-buttons">
+  `
+
+  quizIds.forEach((quizId) => {
+    html += `
+      <button class="quiz-open-button" data-quiz-id="${quizId}">
+        Quiz ${quizId}
+      </button>
+    `
+  })
+
+  html += `
+      </div>
+      <div id="quizQuestionsDetail"></div>
+    </div>
+  `
+
+  quizOverviewDiv.innerHTML = html
+
+  document.querySelectorAll('.quiz-open-button').forEach(button => {
+    button.addEventListener('click', () => {
+      const quizId = Number(button.dataset.quizId)
+      loadQuizQuestions(quizId)
+    })
+  })
+}
+
+async function loadQuizQuestions(quizId) {
+  const detailDiv = document.querySelector('#quizQuestionsDetail')
+
+  detailDiv.innerHTML = `<p>Quiz ${quizId} laden...</p>`
+
+  const { data, error } = await supabase
+    .from('Questions')
+    .select('*')
+    .eq('post_id', quizId)
+    .order('question_number', { ascending: true })
+
+  if (error) {
+    console.error('Fout bij ophalen vragen:', error)
+    detailDiv.innerHTML = '<p>Fout bij ophalen vragen.</p>'
+    return
+  }
+
+  if (!data || data.length === 0) {
+    detailDiv.innerHTML = `<p>Geen vragen gevonden voor quiz ${quizId}.</p>`
+    return
+  }
+
+  let html = `
+    <div class="quiz-detail-card">
+      <h3>Quiz ${quizId}</h3>
+  `
+
+  data.forEach((q) => {
+    html += `
+      <div class="dashboard-question">
+        <p><strong>${q.question_number}. ${q.question_text}</strong></p>
+
+        <ul>
+          <li><strong>A:</strong> ${q.option_a || '-'}</li>
+          <li><strong>B:</strong> ${q.option_b || '-'}</li>
+          <li><strong>C:</strong> ${q.option_c || '-'}</li>
+          ${q.option_d ? `<li><strong>D:</strong> ${q.option_d}</li>` : ''}
+        </ul>
+
+        <p><strong>Goede antwoord:</strong> ${q.correct_answer || '-'}</p>
+      </div>
+    `
+  })
+
+  html += `</div>`
+
+  detailDiv.innerHTML = html
+}
+
 function applyFilterAndRender() {
   renderTable(allSubmissions)
 }
@@ -188,6 +285,7 @@ async function loadDashboard() {
 }
 
 loadDashboard()
+renderQuizButtons()
 
 supabase
   .channel('dashboard-realtime')
