@@ -541,3 +541,48 @@ tr:hover td {
   border-left: 6px solid #c62828;
   background: #fdecea;
 }
+.quiz-overview-section {
+  margin-top: 32px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: var(--rnr-shadow);
+}
+
+.quiz-overview-section h2 {
+  margin-top: 0;
+  color: var(--rnr-charcoal);
+}
+
+.quiz-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.quiz-open-button {
+  width: auto;
+  padding: 10px 16px;
+}
+
+.quiz-detail-card {
+  margin-top: 20px;
+}
+
+.dashboard-question {
+  background: #f9f7ef;
+  border-left: 6px solid var(--rnr-yellow);
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.dashboard-question ul {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.dashboard-question li {
+  margin-bottom: 6px;
+}
